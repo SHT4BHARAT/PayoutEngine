@@ -5,52 +5,13 @@ services:
     ipAllowList: []
     plan: free
 
-  # Web API
+  # Web API & Background Worker (Combined for Free Tier)
   - type: web
     name: payout-api
     env: python
+    plan: free
     buildCommand: "./backend/build.sh"
-    startCommand: "cd backend && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT"
-    envVars:
-      - key: DB_ENGINE
-        value: postgresql
-      - key: POSTGRES_DB
-        fromDatabase:
-          name: payout-db
-          property: database
-      - key: POSTGRES_USER
-        fromDatabase:
-          name: payout-db
-          property: user
-      - key: POSTGRES_PASSWORD
-        fromDatabase:
-          name: payout-db
-          property: password
-      - key: POSTGRES_HOST
-        fromDatabase:
-          name: payout-db
-          property: host
-      - key: POSTGRES_PORT
-        fromDatabase:
-          name: payout-db
-          property: port
-      - key: CELERY_BROKER_URL
-        fromService:
-          type: redis
-          name: payout-redis
-          property: connectionString
-      - key: CELERY_RESULT_BACKEND
-        fromService:
-          type: redis
-          name: payout-redis
-          property: connectionString
-
-  # Celery Worker
-  - type: worker
-    name: payout-worker
-    env: python
-    buildCommand: "./backend/build.sh"
-    startCommand: "cd backend && celery -A config worker -l info"
+    startCommand: "./backend/start.sh"
     envVars:
       - key: DB_ENGINE
         value: postgresql
@@ -89,3 +50,4 @@ databases:
   - name: payout-db
     databaseName: payout_engine
     user: admin
+    plan: free
