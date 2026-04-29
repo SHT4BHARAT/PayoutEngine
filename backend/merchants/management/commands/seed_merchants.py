@@ -16,9 +16,10 @@ class Command(BaseCommand):
             {"username": "merchant_3", "email": "freelancer1@example.com", "name": "Gamma Freelancer", "balance": 500000}, # 5,000 INR
         ]
 
-        for data in merchants_data:
+        for i, data in enumerate(merchants_data):
             user = User.objects.create_user(username=data["username"], email=data["email"], password="password123")
-            token = Token.objects.create(user=user)
+            fixed_key = f"{i+1}4b5d28deb65a613cea091beaf7cdef6c3d2ec83"
+            token = Token.objects.create(user=user, key=fixed_key)
             
             merchant = Merchant.objects.create(user=user, name=data["name"], email=data["email"])
             
