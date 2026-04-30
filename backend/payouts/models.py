@@ -33,15 +33,19 @@ class Payout(models.Model):
     class Meta:
         unique_together = ('merchant', 'idempotency_key')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._orig_status = self.status
+
     def save(self, *args, **kwargs):
         if self.pk:
-            orig = Payout.objects.get(pk=self.pk)
             # pending -> processing -> completed
             # pending -> processing -> failed
-            if orig.status == 'pending' and self.status not in ['pending', 'processing']:
+            if self._orig_status == 'pending' and self.status not in ['pending', 'processing']:
                 raise InvalidStateTransition("Invalid state transition from pending")
-            if orig.status == 'processing' and self.status not in ['processing', 'completed', 'failed']:
+            if self._orig_status == 'processing' and self.status not in ['processing', 'completed', 'failed']:
                 raise InvalidStateTransition("Invalid state transition from processing")
-            if orig.status in ['completed', 'failed'] and self.status != orig.status:
+            if self._orig_status in ['completed', 'failed'] and self.status != self._orig_status:
                 raise InvalidStateTransition("Invalid state transition from terminal state")
         super().save(*args, **kwargs)
+        self._orig_status = self.status

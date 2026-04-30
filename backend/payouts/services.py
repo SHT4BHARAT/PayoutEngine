@@ -20,7 +20,8 @@ class PayoutService:
             # 2. Check idempotency
             payout = Payout.objects.filter(
                 merchant=merchant,
-                idempotency_key=idempotency_key
+                idempotency_key=idempotency_key,
+                idempotency_expires_at__gt=timezone.now()
             ).first()
 
             if payout:
@@ -36,6 +37,9 @@ class PayoutService:
                 merchant=merchant, entry_type='debit'
             ).aggregate(s=Sum('amount_paise'))['s'] or 0
             
+            # Note: debits includes the hold created on payout creation.
+            # We never create a second debit entry on payout completion.
+            # This correctly computes available balance minus any held or settled funds.
             available_balance = credits - debits
 
             if available_balance < amount_paise:

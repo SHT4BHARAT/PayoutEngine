@@ -6,7 +6,6 @@ from .services import PayoutService
 from common.errors import APIError
 from merchants.models import BankAccount
 from .models import Payout
-from merchants.models import BankAccount
 
 class PayoutCreateView(views.APIView):
     permission_classes = [IsAuthenticated]
