@@ -5,7 +5,9 @@ from django.conf import settings
 class Merchant(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
+    business_name = models.CharField(max_length=255, blank=True)
     email = models.EmailField(unique=True)
+    country_code = models.CharField(max_length=2, default='IN')
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
