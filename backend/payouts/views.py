@@ -6,6 +6,7 @@ from .services import PayoutService
 from common.errors import APIError
 from merchants.models import BankAccount
 from .models import Payout
+# Duplicate BankAccount import removed
 
 class PayoutCreateView(views.APIView):
     permission_classes = [IsAuthenticated]

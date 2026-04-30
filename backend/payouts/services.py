@@ -17,7 +17,7 @@ class PayoutService:
             # 1. Lock merchant row for update
             merchant = Merchant.objects.select_for_update().get(id=merchant_id)
 
-            # 2. Check idempotency
+            # 2. Check idempotency (strictly enforcing 24h expiry window)
             payout = Payout.objects.filter(
                 merchant=merchant,
                 idempotency_key=idempotency_key,
