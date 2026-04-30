@@ -1,4 +1,5 @@
 import random
+from django.db.models import F
 from datetime import timedelta
 from celery import shared_task
 from django.utils import timezone
@@ -39,19 +40,17 @@ def process_payout(self, payout_id):
     if payout.status not in ['pending', 'processing']:
         return f"Payout {payout_id} already in terminal state {payout.status}"
 
-    if payout.status == 'pending':
-        from django.db.models import F
-        # Atomic check-and-set to avoid race condition
-        updated = Payout.objects.filter(
-            id=payout_id, status='pending'
-        ).update(
-            status='processing',
-            processed_at=timezone.now(),
-            attempt_count=F('attempt_count') + 1
-        )
-        if not updated:
-            return f"Payout {payout_id} not in pending state, skipping"
-        payout = Payout.objects.get(id=payout_id)
+    from django.db.models import F
+    updated = Payout.objects.filter(
+        id=payout_id, status='pending'
+    ).update(
+        status='processing',
+        processed_at=timezone.now(),
+        attempt_count=F('attempt_count') + 1
+    )
+    if not updated:
+        return f"Payout {payout_id} not claimable"
+    payout = Payout.objects.get(id=payout_id)
 
     # Simulate bank settlement
     # 70% success, 20% fail, 10% hang
@@ -98,12 +97,12 @@ def retry_stuck_payouts():
                 _fail_payout(p, "Max retries exceeded")
                 failed += 1
             else:
-                # Reset status to pending and re-queue so process_payout processes it again
                 with transaction.atomic():
                     p_locked = Payout.objects.select_for_update().get(id=p.id)
                     if p_locked.status == 'processing':
                         p_locked.status = 'pending'
-                        p_locked.save(update_fields=['status', 'updated_at'])
+                        p_locked.attempt_count += 1
+                        p_locked.save(update_fields=['status', 'attempt_count', 'updated_at'])
                         process_payout.delay(p_locked.id)
                         retried += 1
                 
